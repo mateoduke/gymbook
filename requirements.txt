@@ -1,0 +1,14 @@
+flask
+flask-restful
+flask-SQLAlchemy
+flask-marshmallow
+flask-migrate
+marshmallow-sqlalchemy
+
+python-dotenv
+requests
+sphinx
+sphinx_rtd_theme
+coverage
+pytest
+waitress
