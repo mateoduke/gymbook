@@ -1,8 +1,14 @@
 import click
 import os
-
+import json
 from flask import Flask
+from flask_marshmallow import Marshmallow
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_restful import Api
 
+db = SQLAlchemy()
+ma = Marshmallow()
 
 def create_app(config = None):
     app = Flask(__name__, instance_relative_config=True)
@@ -16,14 +22,16 @@ def create_app(config = None):
     except OSError:
         pass
 
-    # cli commands
-    @app.cli.command('create-user')
-    @click.argument('name')
-    def create_user(name):
-        print(name)
+    db.init_app(app)
 
-    @app.route('/')
-    def hello():
-        return 'Hello World'
+
+    with app.app_context():
+        from .auth.resources import auth_bp, UserResource, UserListResource
+        api = Api(auth_bp)
+        api.add_resource(UserListResource, '/users', endpoint = 'user_list')
+        api.add_resource(UserResource, '/users/<int:id>', endpoint = 'user_detail')
+        db.create_all()
+
+    app.register_blueprint(auth_bp)
 
     return app
