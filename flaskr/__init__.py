@@ -27,9 +27,12 @@ def create_app(config = None):
 
     with app.app_context():
         from .auth.resources import auth_bp, UserResource, UserListResource
-        api = Api(auth_bp)
-        api.add_resource(UserListResource, '/users', endpoint = 'user_list')
-        api.add_resource(UserResource, '/users/<int:id>', endpoint = 'user_detail')
+        from .auth.resources import TokenResource, TokenListResource
+        auth_api = Api(auth_bp)
+        auth_api.add_resource(UserListResource, '/users', endpoint = 'user_list')
+        auth_api.add_resource(UserResource, '/users/<int:id>', endpoint = 'user_detail')
+        auth_api.add_resource(TokenListResource, '/tokens', endpoint = 'token_list')
+        auth_api.add_resource(TokenResource, '/tokens/<int:id>', endpoint = 'token_detail')
         db.create_all()
 
     app.register_blueprint(auth_bp)
