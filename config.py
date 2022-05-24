@@ -24,3 +24,12 @@ class ProductionConfig(Config):
     ENV = 'production'
     DEVELOPMENT = False
     SECRET_KEY = os.environ.get('SECRET_KEY')
+
+
+class TestingConfig(Config):
+    ENV = 'testing'
+    DEVELOPMENT = False
+    DEBUG = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    LOGIN_TIMEOUT_MINUTES = 10
+    LOGIN_TIMEOUT_HOURS = 1

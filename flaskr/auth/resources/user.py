@@ -1,25 +1,22 @@
-from flask import current_app, request, Blueprint, jsonify
+from flask import current_app, request
 from flask_restful import Resource
 from marshmallow import  ValidationError
 
-
 from ..schemas import UserSchema
-from ..models import User, Token, InvalidTokenError, auth_required, admin_required
+from ..models import User, Token, InvalidTokenError, auth_required
 
-
-auth_bp = Blueprint('auth', __name__, url_prefix='/api/v2/auth')
 
 class UserResource(Resource):
     """Resource for handling requests made to the /api/v2/auth/users/<id> endpoint"""
     user_schema = UserSchema()
     user_list_schema = UserSchema(many=True)
 
-    @admin_required
-    def get(self, id):
-        user = User.query.get(id)
-        if user is None:
+    @auth_required(admin_required=True)
+    def get(self, id, user):
+        user_queryset = User.query.get(id)
+        if user_queryset is None:
             return {'errors': [f'User with id {id!r} not found']}, 404
-        return self.user_schema.dump(user), 200
+        return self.user_schema.dump(user_queryset), 200
 
 
 class UserListResource(Resource):
@@ -27,7 +24,7 @@ class UserListResource(Resource):
     user_schema = UserSchema()
     user_list_schema = UserSchema(many=True)
 
-    @admin_required
+    @auth_required(admin_required=True)
     def get(self, user):
         all_users = User.query.all()
         return self.user_list_schema.dump(all_users), 200
@@ -61,41 +58,4 @@ class UserListResource(Resource):
         user_token.save()
         new_user.save()
 
-        return self.user_schema.dump(new_user), 200
-
-@auth_bp.route('/login', methods = ['POST'])
-def login():
-    """View for logging in a user"""
-    request_json = request.get_json(silent=True)
-    if not request_json:
-        return {'error': 'username and password not provided in message body'}
-
-    username = request_json.get('username', '')
-    password = request_json.get('password', '')
-
-    # Lookup user and validate credentials
-    user = User.query.filter_by(username=username).first()
-    user_authorized = User.check_user_password(user, password)
-    if not user_authorized:
-        return {'error':'User with credentials not found'}, 403
-
-    # Lookup token and refresh token if it has expired
-    user_token = Token.query.filter_by(user_id=user.id).first()
-    if user_token:
-        if not user_token.has_expired:
-            return {'token': user_token.key}, 201
-        user_token.delete()
-
-    new_user_token = Token(user=user)
-    new_user_token.save()
-    return {'token': new_user_token.key}, 201
-
-
-@auth_bp.route('/logout', methods = ['POST',])
-@auth_required
-def logout(user):
-    user_token = Token.query.filter_by(user_id=user.id).first()
-    if user_token:
-        user_token.delete()
-
-    return {}, 201
+        return self.user_schema.dump(new_user), 201

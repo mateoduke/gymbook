@@ -74,53 +74,30 @@ class Token(db.Model):
         return token[1]
 
 
-
-def auth_required(f):
-    """Decorator for view functions that require the user to provide an authentication token"""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token_context = request.headers.get('Authorization')
-        if token_context:
-            try:
-                token = Token.get_token_from_header_context(token_context)
-            except InvalidTokenError as e:
-                return jsonify({'error': str(e)}), 400
-
-
-            token_exists = Token.query.filter_by(key=token).first()
-            if token_exists:
-                if token_exists.has_expired:
-                    return {'error': 'Your token has expired, please login again'}, 401
-                kwargs['user'] = token_exists.user
-                return f(*args, **kwargs)
-
-            return {'error': 'invalid token'}, 403
-        return {'error': 'Token not provided'}, 403
-    return decorated
+def auth_required(admin_required=False):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            token_context = request.headers.get('Authorization')
+            if token_context:
+                try:
+                    token = Token.get_token_from_header_context(token_context)
+                except InvalidTokenError as e:
+                    return {'error': str(e)}, 400
 
 
-def admin_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token_context = request.headers.get('Authorization')
-        if token_context:
-            try:
-                token = Token.get_token_from_header_context(token_context)
-            except InvalidTokenError as e:
-                return jsonify({'error': str(e)}), 400
+                token_exists = Token.query.filter_by(key=token).first()
+                if token_exists:
+                    if token_exists.has_expired:
+                        return {'error': 'Your token has expired, please login again'}, 401
 
+                    if not token_exists.user.admin and admin_required:
+                        return {'error': 'Access Restricted'}, 403
 
-            token_exists = Token.query.filter_by(key=token).first()
-            if token_exists:
-                if token_exists.has_expired:
-                    return {'error': 'Your token has expired, please login again'}, 401
+                    kwargs['user'] = token_exists.user
+                    return f(*args, **kwargs)
 
-                if not token_exists.user.admin:
-                    return jsonify({'error': 'Access Restricted'}), 403
-
-                kwargs['user'] = token_exists.user
-                return f(*args, **kwargs)
-
-            return {'error': 'invalid token'}, 403
-        return {'error': 'Token not provided'}, 403
-    return decorated
+                return {'error': 'invalid token'}, 403
+            return {'error': 'Token not provided'}, 403
+        return wrapper
+    return decorator
