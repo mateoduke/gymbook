@@ -31,6 +31,7 @@ def create_app(config = None):
             from .auth.resources import UserResource, UserListResource
             from .auth.resources import TokenResource, TokenListResource
             from .auth.views import login, logout, routes
+            from .auth.commands import create_user
             auth_api = Api(auth_bp)
             auth_api.add_resource(UserListResource, '/users', endpoint = 'user_list')
             auth_api.add_resource(UserResource, '/users/<int:id>', endpoint = 'user_detail')
