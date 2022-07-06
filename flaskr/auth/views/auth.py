@@ -1,17 +1,16 @@
-from flask import request, current_app, url_for, jsonify
+from flask import request, current_app, jsonify
 from ..models import User, Token, auth_required
 from flaskr.auth import auth_bp
 
 
 
 @auth_bp.route('/', methods=['GET',])
-def routes():
+@auth_required()
+def routes(user):
     """Returns all routes for the endpoint"""
     prefix = auth_bp.name + '.'
     rules = current_app.url_map.iter_rules()
-    for rule in rules:
-        pass
-    routes = [url_for(rule.endpoint) for rule in rules if rule.endpoint.startswith(prefix)]
+    routes = [str(rule) for rule in rules if rule.endpoint.startswith(prefix)]
     return jsonify(routes) , 200
 
 
@@ -47,6 +46,7 @@ def login():
 @auth_bp.route('/logout', methods = ['POST',])
 @auth_required()
 def logout(user):
+    """Logs out given user by deleting their token"""
     user_token = Token.query.filter_by(user_id=user.id).first()
     if user_token:
         user_token.delete()

@@ -1,4 +1,4 @@
-from getpass import getpass
+import getpass
 
 from ..models import User
 from ..schemas import UserSchema
@@ -13,12 +13,18 @@ def create_user():
     username = input('Please enter username: ')
     if User.query.filter_by(username=username).count() > 0:
         print(f'Username: {username} already in use')
-        return
+        return False
 
-    password = getpass()
+    password = getpass.getpass()
     if len(password) < 12:
         print('Password must be at least 12 characters long')
-        return
+        return False
+
+    password_confirmation = getpass.getpass('Password [Re-Enter]:')
+    if password_confirmation != password:
+        print('Passwords do not match')
+        return False
+
 
     first_name = input('Please enter first name: ')
     last_name = input('Please enter last name: ')
@@ -33,8 +39,6 @@ def create_user():
     }
     user_context = UserSchema().load(user_json)
 
-    if not user_context['valid']:
-        print({'errors': user_context['errors']})
-        return
-
     user_context['instance'].save()
+    print('New user created successfully')
+    return True

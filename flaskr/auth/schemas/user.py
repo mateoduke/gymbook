@@ -20,15 +20,15 @@ class UserSchema(SQLAlchemyAutoSchema):
         }
     )
 
-    def validate(self, data):
+    def _validate_data(self, data):
         """Validation function for incomming request json. Ensures that data from request
         is valid for creating a new user. If any data is not valid, an error will be appended
         and returned.
 
         :param data: json data from request
         :type data: dict
-        :return: Whether or not
-        :rtype: _type_
+        :return: Whether or not data is valid and errors (if any)
+        :rtype: tuple
         """
         errors = []
 
@@ -41,10 +41,8 @@ class UserSchema(SQLAlchemyAutoSchema):
         if len(password) < 12:
             errors.append('Password must be at least 12 characters long')
 
-
         if user_queryset.count() > 0:
             errors.append(f'Username {username!r} has already been used')
-
 
         return len(errors) == 0, errors
 
@@ -57,9 +55,9 @@ class UserSchema(SQLAlchemyAutoSchema):
         :return: context containing whether json was valid and errors/User instance
         :rtype: dict
         """
-        valid, errors = self.validate(data)
+        valid, errors = self._validate_data(data)
         if not valid:
-            return {'valid': valid, 'errors': errors}
+            return {'valid': valid, 'instance': None,'errors': errors}
 
         data['password'] = generate_password_hash(data['password'])
-        return {'valid': valid, 'instance':User(**data)}
+        return {'valid': valid, 'instance':User(**data), 'errors': None}

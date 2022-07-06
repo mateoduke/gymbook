@@ -28,6 +28,10 @@ class Token(db.Model):
 
 
     def save(self):
+        """Saves token objects to database, generates
+        key if token has not yet been created
+
+        """
         if self.id is None:
             self.key = Token.generate_key()
             db.session.add(self)
@@ -35,6 +39,9 @@ class Token(db.Model):
 
 
     def delete(self):
+        """Deletes token objects from database
+
+        """
         db.session.delete(self)
         return db.session.commit()
 
@@ -53,6 +60,7 @@ class Token(db.Model):
 
     @property
     def expire_time(self):
+        """Time at which this token expires"""
         return self.created_at + timedelta(hours=int(current_app.config['LOGIN_TIMEOUT_HOURS']),
                                                     minutes=int(current_app.config['LOGIN_TIMEOUT_MINUTES']))
 
@@ -75,6 +83,14 @@ class Token(db.Model):
 
 
 def auth_required(admin_required=False):
+    """Decorator for wrapping view functions that require a user
+    to be authenticated in order to access. View functions that
+    implement this decorator must have a parameter called "user".
+    This is an object representing the authenticated user
+
+    :param admin_required: describes if view can only be accessed by admins, defaults to False
+    :type admin_required: bool, optional
+    """
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
@@ -94,6 +110,7 @@ def auth_required(admin_required=False):
                     if not token_exists.user.admin and admin_required:
                         return {'error': 'Access Restricted'}, 403
 
+                    # adds the authenticated user to the view function kwargs
                     kwargs['user'] = token_exists.user
                     return f(*args, **kwargs)
 
